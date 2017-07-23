@@ -168,3 +168,86 @@ V_myo = inv(eye(n_states) - gamma* policy_myo * P_sas)* policy_myo * R_sa
 % an incremental improvement of the farsighted one. Thus the consequent
 % question is whether we are able to select the best policy for a given
 % gamma.
+
+% 2. Solving MDP
+
+% Until this point we considered the problem of evaluating the performance
+% of a specific policy applied to an MDP. If we want to find the optimal
+% policy (the one maximizing the value in each state) for a given MDP we
+% may consider as solution tools:
+%
+% - Brute force: enumerate all the possible policies, evaluate their values
+% and consider the one having the maximum value.
+%
+% - Policy iteration: iteratively compute greedy values for a policy and
+% modify the policy accordingly
+%
+% - Value iteration: iteratively apply the Bellman optimality equation in
+% its recursive form
+%
+% In this case we do not havce the chance to solve the Bellman optimality
+% equation in a closed form since the max operator is not linear. Thus, a
+% first option is simply to compute the value V for each possible policy
+% and select the one having the highest value for each state. 
+
+gamma = 0.9;
+policy = [];
+policy{1} = [1 0 0 0 0; 0 0 1 0 0; 0 0 0 0 1];
+policy{2} = [0 1 0 0 0; 0 0 1 0 0; 0 0 0 0 1];
+policy{3} = [1 0 0 0 0; 0 0 0 1 0; 0 0 0 0 1];
+policy{4} = [0 1 0 0 0; 0 0 0 1 0; 0 0 0 0 1];
+
+for ii = 1:4
+    V(:,ii) = inv(eye(n_states) - gamma * policy{ii} * P_sas) * policy{ii} * R_sa;
+end
+
+V
+
+% Clearly if the policy space is too wide, this procedure is unfeasible
+% since it requires to solve |S|^|A| Bellman expectation equations.
+%
+% Let us apply the policy iteration to our problem, where we are using the 
+% Bellman optimality eqaution ti incrementally get close to the optimal
+% solution.
+%
+% Here we decouple the process into two phases POLICY EVALUTAION, where we
+% compute the value of the given policy, and POLICY IMPROVEMENT, where we
+% change the policy according to the newly estimated values.
+
+gamma = 0.9;
+admissible_actions = [1 1 0 0 0; 0 0 1 1 0; 0 0 0 0 1];
+policy = [0 1 0 0 0; 0 0 0 1 0; 0 0 0 0 1];
+V = zeros(n_states, 1);
+V_old = ones(n_states, 1);
+
+while any(V_old ~= V)
+  V_old = V
+  % Policy evaluation
+  V = inv(eye(n_states) - gamma * policy * P_sas) * policy * R_sa
+  greedy_rev = R_sa + gamma * P_sas * V;
+  % Policy improvement
+  Q = repmat(greedy_rev', n_states, 1) .* admissible_actions;
+  Q(Q == 0) = - inf;
+  policy = repmat(max(Q, [],2),1,5) == Q;
+end
+
+policy
+
+% Another option is to use the recursive equation. Let us apply value
+% iteration to our problem.
+
+gamma = 0.9;
+V = zeros(n_states, 1);
+V_old = ones(n_states, 1);
+tol = 0.001;
+
+while any(abs(V - V_old) > tol) 
+    V_old = V;
+    greedy_rev = R_sa + gamma * P_sas * V;
+    Q = repmat(greedy_rev', n_states, 1) .* admissible_actions;
+    Q(Q == 0) = -inf;
+    V = max(Q, [], 2);
+end
+
+V
+policy = repmat(max(Q, [], 2), 1, 5) == Q
