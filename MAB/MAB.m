@@ -81,3 +81,66 @@ h(3) = plot(1:T,UB,'r');
 % regret.
 
 % 2. Thompson Sampling
+
+% If we want to resort to the Bayesian approach to solve the same problem
+% we might consider the Thompson Sampling algorithm. In this case we
+% exploit directly the fact that the considered rewards are Bernoulli
+% variables and use Beta prior distributions to model the arms.
+
+hat_r = zeros(1, n_arms);
+f = zeros(1, n_arms);
+cum_r = zeros(1, n_arms);
+
+colors = ['m' 'g' 'b' 'k'];
+
+for ii = 1:n_arms
+    beta_dist(ii) = makedist('Beta', 'a', 1, 'b', 1);
+end
+
+figure();
+ind = zeros(T,1);
+rewards = zeros(T,1);
+
+for tt =  1:T
+    % Decision
+    for ii = 1:n_arms
+        hat_r(ii) = beta_dist(ii).random();
+    end
+    [~, ind(tt)] = max(hat_r);
+    
+    % Plot
+    clf;
+    for ii = 1:n_arms
+        x = 0:0.01:1;
+        y = beta_dist(ii).pdf(x);
+        plot(x,y,'color',colors(ii));
+        hold on
+        hat_y = beta_dist(ii).pdf(hat_r(ii));
+        
+        if hat_r(ii) == max(hat_r)
+            plot(hat_r(ii), hat_y, 'x', 'color', colors(ii), 'markersize', 9, 'linewidth', 4);
+        else
+            plot(hat_r(ii), hat_y, 'x', 'color', colors(ii));
+        end
+    end
+    title(['Time step ' num2str(tt)]);
+    drawnow();
+    % pause();
+      
+    % Reward
+    outcome = mathcal_R(ind(tt)).random();
+    rewards(tt) = outcome;
+    
+    % Update statistics
+    beta_dist(ind(tt)).a = beta_dist(ind(tt)).a + outcome;
+    beta_dist(ind(tt)).b = beta_dist(ind(tt)).b + 1 - outcome;
+end
+
+% In this case we do not need the initial round robin since for the first
+% extraction of the next arm to play we resort to the prior distributions
+% Beta(1,1), i.e, a uniform over [0,1].
+
+% The figure shows a posterior after 1000 time stamps. The
+% posterior of the best arm becomes more and more concentrated over the
+% expected value, while the fact that others are not so peaked denote that
+% the suboptimal arms have not been sampled too many times.
