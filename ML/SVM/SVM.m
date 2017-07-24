@@ -95,6 +95,9 @@ svm_kernel_model = fitcsvm(irisInputs, irisTargets, 'KernelFunction', 'gaussian'
 % space but have arbitrary shape in the input space, we need to plot the
 % contour of the function w^T * k(x) + b
 
+C = 1;
+bandwidth = 0.5;
+
 % Visualize the Kernel SVM
 min_x = min(irisInputs);
 max_x = max(irisInputs);
@@ -119,3 +122,27 @@ axis tight
 
 support_vec = svm_kernel_model.SupportVectors;
 plot(support_vec(:,1), support_vec(:,2),'rx');
+
+% Solve the dual form with SMO
+
+manual_svm = svm_smo(irisInputs,irisTargets,1,0.0001,4)
+
+w = manual_svm.w;
+figure();
+plot(irisInputs(pos_class,1), irisInputs(pos_class,2),'r.');
+hold on;
+plot(irisInputs(neg_class,1), irisInputs(neg_class,2),'g.');
+
+% Classes bound
+x = min(irisInputs(:,1)):0.1:max(irisInputs(:,1));
+y = -w(1) / w(2) * x - b / w(2);
+plot(x,y);
+
+%Margins
+y = -w(1) / w(2) * x + (1 - b) / w(2);
+plot(x,y,'--');
+y = -w(1) / w(2) * x + (-1 - b) / w(2);
+plot(x,y,'--');
+xlabel('x_1');
+ylabel('x_2');
+axis tight
