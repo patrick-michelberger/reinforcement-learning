@@ -151,3 +151,11 @@ plot(x_min,y_min,'x');
 legend(h,{'Training MSE' 'Test MSE' 'Validation MSE' 'Crossvalidation MSE'},'location','northwest');
 xlabel('Model parameters');
 ylabel('MSE');
+
+% You can see that the value of the error in the optimal point is greater 
+% than the actual error we have on a test set.
+
+% If we want to perform the Leave One Out (LOO), also called Jackknife, 
+% we just have to modify the number of folds we consider in the 
+% cross-validation procedure, i.e., k_fold = 40;. This kind of procedure is 
+% less biased than cross-validation, but requires more computational time.
